@@ -28,3 +28,28 @@ cat(nlevels(dat$subject), "complete blocks:", paste(levels(dat$subject), collaps
 fit <- aov(score ~ alcohol * difficulty + subject, data = dat)
 summary(fit)
 ```
+
+## Interaction
+
+```{r}
+with(dat, interaction.plot(alcohol, difficulty, score,
+     xlab = "shots of vodka", ylab = "mean score", trace.label = "task"))
+```
+
+## Means
+
+```{r}
+round(tapply(dat$score, list(dat$alcohol, dat$difficulty), mean), 2)
+TukeyHSD(fit, "alcohol")
+```
+
+## Diagnostics
+
+```{r}
+par(mfrow = c(1, 2))
+qqnorm(residuals(fit)); qqline(residuals(fit))
+plot(fitted(fit), residuals(fit), xlab = "Fitted", ylab = "Residuals")
+abline(h = 0, lty = 2)
+par(mfrow = c(1, 1))
+shapiro.test(residuals(fit))
+```
