@@ -11,7 +11,10 @@ knitr::opts_chunk$set(echo = TRUE, fig.width = 6, fig.height = 4)
 ## Data
 
 ```{r}
-raw <- read.csv("../data/scores.csv", stringsAsFactors = FALSE)
+cols <- c("subject", "alcohol", "difficulty", "score")
+raw <- rbind(
+  read.csv("../data/scores.csv", stringsAsFactors = FALSE)[, cols],
+  read.csv("../data/new_subjects.csv", stringsAsFactors = FALSE)[, cols])
 raw$alcohol    <- factor(raw$alcohol, levels = c(0, 1, 3))
 raw$difficulty <- factor(raw$difficulty, levels = c("Easy", "Hard"))
 raw$subject    <- factor(raw$subject)
