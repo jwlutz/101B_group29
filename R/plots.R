@@ -60,4 +60,29 @@ p2 <- ggplot(tk, aes(diff, comp)) +
   theme(panel.grid.major.y = element_blank())
 ggsave("figs/tukey.png", p2, width = 6.2, height = 3.4, dpi = 220, bg = "white")
 
-cat("wrote figs/interaction.png and figs/tukey.png\n")
+## 3. Diagnostics: residual QQ + residuals vs fitted ------------------------
+res <- residuals(fit)
+fit_v <- fitted(fit)
+sw <- shapiro.test(res)
+
+qq <- qqnorm(res, plot.it = FALSE)
+dq <- data.frame(theo = qq$x, samp = qq$y)
+sl <- diff(quantile(res, c(0.25, 0.75))) / diff(qnorm(c(0.25, 0.75)))
+ic <- median(res) - sl * median(dq$theo)
+
+p3 <- ggplot(dq, aes(theo, samp)) +
+  geom_abline(slope = sl, intercept = ic, color = terra, linewidth = 1) +
+  geom_point(color = navy, size = 2, alpha = 0.8) +
+  labs(x = "Theoretical quantiles", y = "Sample quantiles",
+       subtitle = sprintf("Normal Q-Q  (Shapiro-Wilk p = %.2f)", sw$p.value)) +
+  base_theme + theme(plot.subtitle = element_text(color = ink, face = "bold"))
+ggsave("figs/qq.png", p3, width = 6.0, height = 4.4, dpi = 220, bg = "white")
+
+p4 <- ggplot(data.frame(fit_v, res), aes(fit_v, res)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = gray) +
+  geom_point(color = navy, size = 2, alpha = 0.8) +
+  labs(x = "Fitted value", y = "Residual", subtitle = "Residuals vs fitted") +
+  base_theme + theme(plot.subtitle = element_text(color = ink, face = "bold"))
+ggsave("figs/resid_fitted.png", p4, width = 6.0, height = 4.4, dpi = 220, bg = "white")
+
+cat("wrote interaction.png, tukey.png, qq.png, resid_fitted.png\n")
