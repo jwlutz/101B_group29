@@ -34,25 +34,8 @@ block is 6 observations.
 ## layout
 
 ```
-data/scores.csv      long format, one row per observation (source of truth)
-data/wide_view.csv   pivot for pasting back into the sheet (generated)
+data/scores.csv      long format, one row per observation
 python/validate.py   reports which subjects have a full 3x2 set of cells
 python/to_wide.py    long -> wide pivot
-R/analysis.Rmd       reads scores.csv, runs the RCB anova, plots, diagnostics
+R/analysis.Rmd       reads scores.csv, produces RCB anova, plots, diagnostics
 ```
-
-## running it
-
-```
-python3 python/validate.py     # check completeness before analyzing
-python3 python/to_wide.py      # refresh wide_view.csv
-Rscript -e 'rmarkdown::render("R/analysis.Rmd")'
-```
-
-The analysis keeps only subjects with all 6 cells, so adding more complete blocks
-to scores.csv updates every result automatically.
-
-## status
-
-10 subjects entered, 5 complete blocks (William, Brendan, Fleur, Lamont, Dane).
-The rest only have the alcohol = 0 baseline so far.
