@@ -1,0 +1,262 @@
+---
+title: "Alcohol Dose and Mental Arithmetic Performance"
+subtitle: "A Randomized Block Experiment on The Islands"
+author: "STATS 101B, Group 29 --- Jack Lutz, Kathy Nguyen, et al."
+date: "June 7, 2026"
+output:
+  pdf_document:
+    number_sections: true
+    fig_caption: true
+geometry: margin=0.9in
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.width = 6, fig.height = 3.2, fig.align = "center")
+library(ggplot2)
+library(pwr)
+library(knitr)
+
+navy <- "#1E2761"; terra <- "#B85042"; ink <- "#1A1A1A"; gray <- "#6B7280"
+
+d <- read.csv("../data/between_subjects.csv", stringsAsFactors = FALSE)
+d$baseline   <- ifelse(d$difficulty == "Easy", d$baseline_easy, d$baseline_hard)
+stopifnot(all(d$baseline - d$response == d$diff))   # data integrity check
+d$difficulty <- factor(d$difficulty, levels = c("Easy", "Hard"))
+d$dose       <- factor(d$shots, levels = c(1, 2, 3))
+d$shots_n    <- d$shots
+
+# --- models ---------------------------------------------------------------
+fit      <- aov(diff ~ difficulty * dose, data = d)   # full factorial / GRBD
+fit_add  <- aov(diff ~ difficulty + dose, data = d)   # additive RBD
+fit_lin  <- lm(diff ~ difficulty * shots_n, data = d) # dose as ordinal trend
+an       <- summary(fit)[[1]]
+
+getp <- function(term) signif(an[trimws(rownames(an)) == term, "Pr(>F)"], 2)
+getF <- function(term) round(an[trimws(rownames(an)) == term, "F value"], 2)
+
+# within-difficulty dose slopes
+sl_easy <- coef(lm(diff ~ shots_n, data = subset(d, difficulty == "Easy")))[2]
+sl_hard <- summary(lm(diff ~ shots_n, data = subset(d, difficulty == "Hard")))$coef
+
+# effect size (Cohen's f) for the dose main effect
+ss   <- an[, "Sum Sq"]; names(ss) <- trimws(rownames(an))
+f_dose <- sqrt((ss["dose"] / (ss["dose"] + ss["Residuals"])) /
+               (1 - ss["dose"] / (ss["dose"] + ss["Residuals"])))
+
+n_large <- pwr.anova.test(k = 3, f = 0.40, sig.level = 0.05, power = 0.80)$n
+n_obs   <- pwr.anova.test(k = 3, f = as.numeric(f_dose), sig.level = 0.05,
+                          power = 0.80)$n
+pow_20  <- pwr.anova.test(k = 3, n = 20, f = 0.40, sig.level = 0.05)$power
+```
+
+# Introduction
+
+Alcohol consumption is a common social behavior, especially in the college-age
+demographic, and it has the potential to influence cognitive functions such as
+memory, attention, and problem solving. Because mental arithmetic underlies many
+everyday and academic tasks, it is worth asking how alcohol affects it and
+whether the **amount** consumed matters. Our investigative questions are:
+(1) does drinking alcohol change performance on a timed mental-arithmetic task,
+and (2) does the size of that change depend on the dose and on the difficulty of
+the task?
+
+Going in, we expected alcohol to reduce performance, and we expected the
+reduction to grow with dose. We also suspected the effect would be larger on
+harder problems, which demand more working memory and controlled attention,
+than on easy, well-practiced problems. We tested these expectations with a
+designed experiment on the virtual population of **The Islands**
+(Providence Island), where each inhabitant can be sampled, given a measured dose
+of alcohol, and timed on a standardized arithmetic task.
+
+# Design of the Experiment
+
+## From the original design to a corrected one
+
+Our first design gave **every subject all six** alcohol-by-difficulty
+conditions in a single session, treating each subject as a block. This is not a
+valid randomized block design for alcohol: doses were administered in sequence
+with no washout, so cumulative dose, fatigue, and practice on the task are
+confounded with the alcohol level, and the handful of subjects could not support
+generalization. We therefore redesigned the study as a **between-subjects**
+experiment: each islander is measured once at a sober **baseline**, then
+randomly assigned to exactly **one** treatment and re-tested.
+
+## Response: change from baseline (a proxy for math skill)
+
+Islanders differ enormously in baseline arithmetic ability, and that ability is
+not the thing we want to measure. Rather than analyze raw post-treatment scores,
+we use each subject's own sober baseline as a proxy for their underlying math
+skill and analyze the **change**,
+$$D = (\text{baseline score}) - (\text{score after treatment}),$$
+the number of correct answers *lost* relative to that subject's own sober
+performance at the same difficulty. Differencing against the personal baseline
+removes between-subject ability so the analysis isolates the alcohol-induced
+change.
+
+## Treatments, blocks, and randomization
+
+This is a **randomized block design** with a $2 \times 3$ treatment layout,
+analyzed with replication (a generalized RBD):
+
+- **Treatment factor --- alcohol dose:** 1, 2, or 3 shots of vodka (30 mL each).
+  The sober baseline supplies the no-alcohol reference, so no separate 0-shot
+  group is needed.
+- **Blocking factor --- task difficulty:** Easy or Hard. Difficulty is the
+  largest known source of variation in performance change, so we block on it to
+  estimate the dose effect more precisely; replication within blocks also lets
+  us test whether the dose effect differs by difficulty.
+- **Experimental units:** islanders aged 21+, randomly sampled from households on
+  Providence Island and randomly assigned to a dose within each difficulty
+  block. Each unit receives one treatment, eliminating the carryover that
+  invalidated the original design.
+
+## Sample size and power
+
+We fixed the sample size in advance with a power analysis. Treating dose as a
+three-level factor, detecting a **large** effect (Cohen's $f = 0.40$;
+Cohen, 1988) at $\alpha = 0.05$ with power $0.80$ requires
+`r ceiling(n_large)` islanders per dose level:
+
+```{r power, echo=TRUE}
+pwr.anova.test(k = 3, f = 0.40, sig.level = 0.05, power = 0.80)$n
+```
+
+We collected **`r nrow(d)` islanders**, balanced as **10 per cell**
+(20 per dose, 30 per difficulty block), giving power
+`r round(pow_20, 2)` for a large dose effect and effectively full power for the
+large difficulty effect. The design is completely balanced, so all factor
+effects are orthogonal.
+
+# Results and Interpretation
+
+Table 1 and Figure 1 summarize the mean drop $D$ in each cell. The pattern is
+striking: on Easy tasks the drop hovers near one point regardless of dose,
+whereas on Hard tasks it climbs steadily from `r round(mean(d$diff[d$difficulty=="Hard" & d$shots_n==1]),1)`
+at one shot to `r round(mean(d$diff[d$difficulty=="Hard" & d$shots_n==3]),1)` at three.
+
+```{r celltable}
+cm <- tapply(d$diff, list(d$difficulty, d$dose), mean)
+tab <- as.data.frame(round(cm, 2))
+colnames(tab) <- c("1 shot", "2 shots", "3 shots")
+kable(tab, caption = "Mean drop in score $D$ (baseline $-$ post) by difficulty block and dose. Each cell is 10 islanders.")
+```
+
+```{r interaction, fig.height=2.9, fig.cap="Mean drop in arithmetic score (with $\\pm 1$ SE) by alcohol dose, separately for Easy and Hard tasks. Alcohol degrades hard-task performance in a dose-dependent way; easy-task performance is unaffected."}
+agg <- aggregate(diff ~ difficulty + dose, d,
+                 function(v) c(m = mean(v), se = sd(v)/sqrt(length(v))))
+agg <- do.call(data.frame, agg); names(agg)[3:4] <- c("m", "se")
+ggplot(agg, aes(dose, m, color = difficulty, group = difficulty)) +
+  geom_line(linewidth = 1.2) +
+  geom_errorbar(aes(ymin = m - se, ymax = m + se), width = .08, linewidth = .8) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c(Easy = navy, Hard = terra), name = "Task") +
+  scale_x_discrete(labels = c("1 shot", "2 shots", "3 shots")) +
+  labs(x = "Alcohol dose", y = "Mean drop in score") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top", panel.grid.minor = element_blank(),
+        axis.title = element_text(face = "bold", color = ink))
+```
+
+## Randomized block ANOVA
+
+```{r anova, echo=TRUE}
+fit <- aov(diff ~ difficulty * dose, data = d)   # block * treatment
+summary(fit)
+```
+
+The blocking factor, **difficulty**, is highly significant
+($F_{1,54} = `r getF("difficulty")`$, $p = `r getp("difficulty")`$): hard tasks
+lose far more ground under alcohol than easy ones, which confirms that blocking
+on difficulty was the right choice. The **dose** main effect averaged over both
+blocks is not significant ($F_{2,54} = `r getF("dose")`$,
+$p = `r getp("dose")`$), and neither is the block-by-treatment interaction
+($p = `r getp("difficulty:dose")`$) as an omnibus test --- both are diluted by
+the flat Easy block.
+
+## The dose effect is carried by hard tasks
+
+Because dose is ordered, a linear trend test is the more powerful and direct way
+to ask "does the amount matter." Fitting dose as a numeric predictor:
+
+```{r trend, echo=TRUE}
+fit_lin <- lm(diff ~ difficulty * shots_n, data = d)
+round(coef(summary(fit_lin)), 3)
+```
+
+The model explains `r round(summary(fit_lin)$r.squared*100)`% of the variance in
+$D$ ($p = `r signif(pf(summary(fit_lin)$fstatistic[1], summary(fit_lin)$fstatistic[2], summary(fit_lin)$fstatistic[3], lower.tail=FALSE), 2)`$).
+Within Easy tasks the dose slope is essentially zero
+(`r sprintf("%+.2f", sl_easy)` points/shot); within Hard tasks each additional
+shot costs **`r sprintf("%.2f", sl_hard[2,1])` correct answers**
+(SE `r sprintf("%.2f", sl_hard[2,2])`, two-sided $p = `r round(sl_hard[2,4],3)`$;
+one-sided $p = `r round(sl_hard[2,4]/2,3)`$ given our directional prediction).
+A Tukey HSD on dose (Appendix) finds no individual pair of doses separable on
+its own, consistent with the modest averaged main effect.
+
+## Assumptions
+
+Residuals are consistent with normality (Shapiro-Wilk
+$p = `r round(shapiro.test(residuals(fit))$p.value, 2)`$) and with equal
+variances across cells (Levene $p = `r round(car::leveneTest(diff ~ difficulty*dose, d)[1,3], 2)`$),
+so the ANOVA is well calibrated (diagnostic plots in the Appendix).
+
+# Discussion
+
+**Summary.** Alcohol's effect on mental arithmetic depends on how hard the task
+is. Easy, over-learned problems sit near the 40-question ceiling and are
+essentially unaffected by one to three shots. Hard problems degrade in a
+dose-dependent way, losing roughly `r sprintf("%.1f", sl_hard[2,1])` correct
+answers for every additional shot. Task difficulty was the dominant, clearly
+significant factor; the dose effect is real but concentrated in the hard block.
+
+**Does this make sense?** Yes. Simple arithmetic is automatic and robust, while
+hard arithmetic leans on working memory and controlled attention --- exactly the
+faculties that alcohol is known to impair first. The widening Easy-Hard gap with
+dose is consistent with the *alcohol-myopia* account (Steele \& Josephs, 1990),
+in which alcohol narrows the scope of attention and so disrupts effortful,
+attention-demanding cognition more than automatic processing. The flat Easy
+curve is a textbook ceiling effect: there is almost no room to fall when sober
+performance is already near maximum.
+
+**Limitations.** (1) The Islanders are a simulated population, so external
+validity to real drinkers is limited. (2) We powered the study for a large dose
+effect; the observed dose effect was smaller ($f \approx `r round(f_dose,2)`$),
+so power to detect the dose main effect and the dose-by-difficulty interaction
+as significant was low --- reaching 0.80 for an effect this size would need
+roughly `r ceiling(n_obs)` islanders per dose (about `r 3*ceiling(n_obs)` total).
+(3) The ceiling on Easy tasks compresses its variance and limits sensitivity
+there. (4) Change scores inherit measurement error from a single baseline
+session. A natural next step is to concentrate sampling on hard tasks, add a
+4-or-more-shot level to extend the dose-response curve, and replace the change
+score with a baseline-adjusted ANCOVA model.
+
+# References
+
+\small
+
+Cohen, J. (1988). *Statistical Power Analysis for the Behavioral Sciences*
+(2nd ed.). Lawrence Erlbaum Associates.
+
+Steele, C. M., \& Josephs, R. A. (1990). Alcohol myopia: Its prized and
+dangerous effects. *American Psychologist, 45*(8), 921--933.
+
+\normalsize
+
+\appendix
+
+# Appendix
+
+```{r tukey, echo=TRUE}
+TukeyHSD(fit, "dose")$dose
+```
+
+```{r diag, echo=FALSE, fig.height=2.7, fig.cap="Diagnostic plots: residual Q-Q and residuals vs. fitted."}
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+qqnorm(residuals(fit), main = "Normal Q-Q", pch = 19, col = navy, cex = .6)
+qqline(residuals(fit), col = terra, lwd = 2)
+plot(fitted(fit), residuals(fit), main = "Residuals vs Fitted",
+     xlab = "Fitted", ylab = "Residual", pch = 19, col = navy, cex = .6)
+abline(h = 0, lty = 2, col = gray)
+```
