@@ -1,7 +1,7 @@
 ---
 title: "Alcohol Dose and Mental Arithmetic Performance"
 subtitle: "A Randomized Block Experiment on The Islands"
-author: "STATS 101B, Group 29 --- Kevin Brady, Jonathan Deng, Sung Heon Kang, Jack Lutz, Kathy Nguyen, Siri Suvvari"
+author: "STATS 101B, Group 29: Kevin Brady, Jonathan Deng, Sung Heon Kang, Jack Lutz, Kathy Nguyen, Siri Suvvari"
 date: "June 7, 2026"
 output:
   pdf_document:
@@ -120,10 +120,10 @@ change.
 This is a **randomized block design** with a $2 \times 3$ treatment layout,
 analyzed with replication (a generalized RBD):
 
-- **Treatment factor --- alcohol dose:** 1, 2, or 3 shots of vodka (30 mL each).
+- **Treatment factor (alcohol dose):** 1, 2, or 3 shots of vodka (30 mL each).
   The sober baseline supplies the no-alcohol reference, so no separate 0-shot
   group is needed.
-- **Blocking factor --- task difficulty:** Easy or Hard. Difficulty is the
+- **Blocking factor (task difficulty):** Easy or Hard. Difficulty is the
   largest known source of variation in performance change, so we block on it to
   estimate the dose effect more precisely; replication within blocks also lets
   us test whether the dose effect differs by difficulty.
@@ -260,7 +260,7 @@ change score). Task difficulty was the dominant, clearly significant factor; the
 dose effect is real but concentrated in the hard block.
 
 **Does this make sense?** Yes. Simple arithmetic is automatic and robust, while
-hard arithmetic leans on working memory and controlled attention --- exactly the
+hard arithmetic leans on working memory and controlled attention, exactly the
 faculties that alcohol is known to impair first. The widening Easy-Hard gap with
 dose is consistent with the *alcohol-myopia* account (Steele \& Josephs, 1990),
 in which alcohol narrows the scope of attention and so disrupts effortful,
@@ -278,7 +278,7 @@ performance is already near maximum.
    score, which shrinks $D$. This biases the estimated *absolute* impairment
    toward zero. Because dose was randomized, the practice gain is balanced across
    dose groups and largely cancels in the dose-to-dose comparison, but a sober
-   test--retest control arm would be needed to net it out cleanly.
+   test-retest control arm would be needed to net it out cleanly.
 3. *Dose is not exposure.* Shots were not titrated to body water (weight, sex) or
    tolerance, so a fixed dose produces different blood-alcohol levels and
    different impairment across people. This heterogeneity inflates within-cell
@@ -290,7 +290,7 @@ performance is already near maximum.
 5. *Ceiling on easy tasks.* Sober easy scores sit at 38--40 of 40, leaving almost
    no room to fall, so a genuine easy-task effect could be masked.
 
-Natural next steps follow directly: add a sober test--retest control arm to
+Natural next steps follow directly: add a sober test-retest control arm to
 remove practice, record weight and sex to model blood-alcohol concentration,
 concentrate sampling on hard tasks, and extend the dose range beyond three shots.
 
